@@ -3,8 +3,10 @@ FORMAT = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 logging.basicConfig(filename="PhoenixAPI.log", format=FORMAT, level=logging.DEBUG)
 
 from flask import Flask
-from flask_sqlalchemy import SQLAlchemy
 import flask_restless
+from sqlalchemy import create_engine
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker, scoped_session
 from credentials import DBcreds
 import simplejson as json
 
@@ -24,17 +26,22 @@ connstring_gppt = 'mysql+mysqlconnector://' + \
                   DBcreds.gppt_db['database']
 
 # Connect to database and hook SQLAlchemy to it
-api_app.config['SQLALCHEMY_DATABASE_URI'] = connstring_gppt
-api_app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-gppt_db = SQLAlchemy(api_app)
+# api_app.config['SQLALCHEMY_DATABASE_URI'] = connstring_gppt
+# api_app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+gppt_db = create_engine(connstring_gppt)
+Session = sessionmaker(autocommit=False, autoflush=False, bind=gppt_db)
+mysession = scoped_session(Session)
 logging.info("Connection to database established")
 
+Base = declarative_base(bind=gppt_db)
+
+
 # Create metadata from existing database schema
-gppt_db.reflect()
-logging.info("Database metadata reflected")
+# gppt_db.reflect()
+# logging.info("Database metadata reflected")
 
 # Define model
-class GPPTSubmission(gppt_db.Model):
+class GPPTSubmission(Base):
     __tablename__ = 'gppt_submissions'
     logging.info("Model for gppt_submissions created")
 
@@ -44,7 +51,7 @@ gppt_db.create_all()
 logging.info("Database models applied")
 
 # Create APIs and delimit transferring the actual binary file data
-manager = flask_restless.APIManager(api_app, flask_sqlalchemy_db=gppt_db)
+manager = flask_restless.APIManager(api_app, session=mysession)
 manager.create_api(GPPTSubmission, methods=['GET'], exclude_columns=['Attachment_Binary'])
 logging.info('Endpoint "<base_uri>/api/gppt_submissions" set up')
 
