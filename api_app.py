@@ -4,7 +4,7 @@ logging.basicConfig(filename="PhoenixAPI.log", format=FORMAT, level=logging.DEBU
 
 from flask import Flask
 import flask_restless
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, MetaData, Table
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, scoped_session
 from credentials import DBcreds
@@ -28,26 +28,27 @@ connstring_gppt = 'mysql+mysqlconnector://' + \
 # Connect to database and hook SQLAlchemy to it
 # api_app.config['SQLALCHEMY_DATABASE_URI'] = connstring_gppt
 # api_app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-gppt_db = create_engine(connstring_gppt)
-Session = sessionmaker(autocommit=False, autoflush=False, bind=gppt_db)
-mysession = scoped_session(Session)
+Base = declarative_base()
+engine = create_engine(connstring_gppt)
 logging.info("Connection to database established")
+Session = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+mysession = scoped_session(Session)
+metadata = MetaData(bind=engine)
 
-Base = declarative_base(bind=gppt_db)
 
 
 # Create metadata from existing database schema
-# gppt_db.reflect()
+# engine.reflect()
 # logging.info("Database metadata reflected")
 
 # Define model
 class GPPTSubmission(Base):
     __tablename__ = 'gppt_submissions'
+    __table__ = Table('gppt_submissions', metadata, autoload=True)
     logging.info("Model for gppt_submissions created")
 
 
 # Apply model and instantiate ORM
-gppt_db.create_all()
 logging.info("Database models applied")
 
 # Create APIs and delimit transferring the actual binary file data
