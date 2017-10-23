@@ -17,7 +17,7 @@ def postprocessor(data):
 api_app = Flask(__name__)
 logging.info("Flask app created")
 
-# Create connection string, using credentials in DBcreds.py in folder credentials
+# Create connection string #1, using credentials in DBcreds.py in folder credentials
 connstring_gppt = 'mysql+mysqlconnector://' + \
                   DBcreds.gppt_db['username'] + ':' + \
                   DBcreds.gppt_db['password'] + '@' + \
@@ -25,10 +25,16 @@ connstring_gppt = 'mysql+mysqlconnector://' + \
                   '3306' + '/' + \
                   DBcreds.gppt_db['database']
 
-# Connect to database and hook SQLAlchemy to it
-# api_app.config['SQLALCHEMY_DATABASE_URI'] = connstring_gppt
-# api_app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-Base = declarative_base()
+# Create connection string #1, using credentials in DBcreds.py in folder credentials
+connstring_css = 'mysql+mysqlconnector://' + \
+                  DBcreds.csi_db['username'] + ':' + \
+                  DBcreds.csi_db['password'] + '@' + \
+                  DBcreds.csi_db['host'] + ':' + \
+                  '3306' + '/' + \
+                  DBcreds.csi_db['database']
+
+# Connect to database #1 and hook SQLAlchemy to it
+Base_gppt = declarative_base()
 engine = create_engine(connstring_gppt)
 logging.info("Connection to database established")
 Session = sessionmaker(autocommit=False, autoflush=False, bind=engine)
@@ -42,10 +48,14 @@ metadata = MetaData(bind=engine)
 # logging.info("Database metadata reflected")
 
 # Define model
-class GPPTSubmission(Base):
+class GPPTSubmission(Base_gppt):
     __tablename__ = 'gppt_submissions'
     __table__ = Table('gppt_submissions', metadata, autoload=True)
     logging.info("Model for gppt_submissions created")
+
+class CSATProject(Base_gppt):
+    __tablename__ = 'projects'
+
 
 
 # Apply model and instantiate ORM
